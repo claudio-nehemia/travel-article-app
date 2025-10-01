@@ -1,69 +1,116 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { ArticleState, FilterOptions } from '@/lib/types';
-import { apiService } from '@/lib/api/apiServices';
+"use client";
+
+import { useEffect, useCallback, useRef } from "react";
+import type { FilterOptions } from "@/lib/types";
+import { apiService } from "@/lib/api/apiServices";
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
+import { articlesActions } from "@/lib/store/slices/articlesSlice";
+import type { RootState } from "@/lib/store/store";
+
+type FiltersUpdater = FilterOptions | ((prev: FilterOptions) => FilterOptions);
 
 export const useArticles = (isAuthenticated: boolean) => {
-  const [articleState, setArticleState] = useState<ArticleState>({
-    articles: [],
-    totalPages: 1,
-    currentPage: 1,
-    isLoading: false,
-    error: null
-  });
-
-  const [filters, setFilters] = useState<FilterOptions>({
-    search: '',
-    sort: 'createdAt:desc',
-    page: 1
-  });
-
+  const dispatch = useAppDispatch();
+  const { articleState, filters } = useAppSelector(
+    (state: RootState) => state.articles
+  );
   const observerTarget = useRef<HTMLDivElement>(null);
 
-  const fetchArticles = useCallback(async (reset = false) => {
-    if (articleState.isLoading || !isAuthenticated) return;
+  const filtersRef = useRef(filters);
+  const articleStateRef = useRef(articleState);
 
-    setArticleState(prev => ({ ...prev, isLoading: true, error: null }));
-
-    try {
-      const response = await apiService.getArticles(
-        reset ? 1 : filters.page,
-        filters.search,
-        filters.sort
-      );
-
-      setArticleState(prev => ({
-        ...prev,
-        articles: reset ? response.data : [...prev.articles, ...response.data],
-        totalPages: response.meta.pagination.pageCount,
-        currentPage: response.meta.pagination.page,
-        isLoading: false
-      }));
-    } catch (error) {
-      setArticleState(prev => ({
-        ...prev,
-        isLoading: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch articles'
-      }));
-    }
-  }, [filters, articleState.isLoading, isAuthenticated]);
-
-  // Initial fetch and filter changes
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchArticles(true);
-    }
-  }, [filters.search, filters.sort, isAuthenticated]);
+    filtersRef.current = filters;
+  }, [filters]);
 
-  // Infinite scroll
+  useEffect(() => {
+    articleStateRef.current = articleState;
+  }, [articleState]);
+
+  const setFilters = useCallback(
+    (updater: FiltersUpdater) => {
+      const nextFilters =
+        typeof updater === "function" ? updater(filters) : updater;
+      dispatch(articlesActions.setFilters(nextFilters));
+    },
+    [dispatch, filters]
+  );
+
+  const { search, sort, titleExact, categoryName, page } = filters;
+
+  const fetchArticles = useCallback(
+    async (reset = false) => {
+      if (!isAuthenticated) return;
+
+      const currentFilters = filtersRef.current;
+      const currentState = articleStateRef.current;
+
+      if (currentState.isLoading && !reset) {
+        return;
+      }
+
+      const targetPage = reset ? 1 : currentFilters.page;
+
+      if (reset && currentFilters.page !== 1) {
+        dispatch(articlesActions.mergeFilters({ page: 1 }));
+      }
+
+      dispatch(articlesActions.fetchStarted());
+
+      try {
+        const response = await apiService.getArticles({
+          page: targetPage,
+          search: currentFilters.search,
+          sort: currentFilters.sort,
+          titleExact: currentFilters.titleExact,
+          categoryName: currentFilters.categoryName,
+        });
+
+        const pagination = response?.meta?.pagination ?? {
+          page: targetPage,
+          pageCount: response?.data?.length ? targetPage : currentState.totalPages,
+        };
+
+        dispatch(
+          articlesActions.fetchSuccess({
+            data: response?.data ?? [],
+            page: pagination.page ?? targetPage,
+            pageCount: pagination.pageCount ?? currentState.totalPages,
+            reset,
+          })
+        );
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to fetch articles";
+        dispatch(articlesActions.fetchFailure(message));
+      }
+    },
+    [dispatch, isAuthenticated]
+  );
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    fetchArticles(true);
+  }, [fetchArticles, isAuthenticated, search, sort, titleExact, categoryName]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (page > 1) {
+      fetchArticles(false);
+    }
+  }, [fetchArticles, isAuthenticated, page]);
+
   useEffect(() => {
     if (!observerTarget.current) return;
 
     const observer = new IntersectionObserver(
-      entries => {
-        if (entries[0].isIntersecting && 
-            !articleState.isLoading && 
-            articleState.currentPage < articleState.totalPages) {
-          setFilters(prev => ({ ...prev, page: prev.page + 1 }));
+      (entries) => {
+        if (
+          entries[0].isIntersecting &&
+          !articleState.isLoading &&
+          articleState.currentPage < articleState.totalPages
+        ) {
+          setFilters((prev) => ({ ...prev, page: prev.page + 1 }));
         }
       },
       { threshold: 1 }
@@ -71,20 +118,13 @@ export const useArticles = (isAuthenticated: boolean) => {
 
     observer.observe(observerTarget.current);
     return () => observer.disconnect();
-  }, [articleState.isLoading, articleState.currentPage, articleState.totalPages]);
-
-  // Load more articles
-  useEffect(() => {
-    if (filters.page > 1) {
-      fetchArticles(false);
-    }
-  }, [filters.page]);
+  }, [articleState.isLoading, articleState.currentPage, articleState.totalPages, setFilters]);
 
   return {
     articleState,
     filters,
     setFilters,
     observerTarget,
-    refetchArticles: () => fetchArticles(true)
+    refetchArticles: () => fetchArticles(true),
   };
 };

@@ -11,17 +11,37 @@ export interface ArticleImage {
     name?: string;
 }
 
+export interface Comment {
+  id: number;
+  documentId: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string;
+  locale: string | null;
+  user?: User;
+  article?: string; // Article documentId
+}
+
+export interface Category {
+  id: number;
+  name: string;
+}
+
 export interface Article {
   id: number;
   documentId: string;
   title: string;
   description: string;
+  cover_image_url?: string;
   createdAt: string;
   updatedAt: string;
   publishedAt: string;
   locale: string | null;
   image?: ArticleImage;
   author?: User;
+  category?: Category;
+  comments?: Comment[];
 }
 
 export interface AuthState {
@@ -38,8 +58,18 @@ export interface ArticleState {
   error: string | null;
 }
 
+export interface CommentState {
+  comments: Comment[];
+  totalPages: number;
+  currentPage: number;
+  isLoading: boolean;
+  error: string | null;
+}
+
 export interface FilterOptions {
   search: string;
+  titleExact: string;
+  categoryName: string;
   sort: string;
   page: number;
 }

@@ -1,26 +1,126 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #f5fbff;
+  --foreground: #123547;
+  --accent-primary: #1d6fa3;
+  --accent-secondary: #1ba5a0;
+  --accent-tertiary: #f1c27d;
+  --card-bg: rgba(255, 255, 255, 0.85);
+  --card-border: rgba(13, 65, 88, 0.08);
+  --muted-bg: rgba(255, 255, 255, 0.6);
+  --font-heading: "Poppins", "Segoe UI", sans-serif;
+  --font-body: "Lato", "Helvetica Neue", sans-serif;
+  --font-sans: var(--font-body);
 }
 
 body {
-  background: var(--background);
+  position: relative;
+  min-height: 100vh;
+  background: radial-gradient(circle at 20% 20%, rgba(29, 111, 163, 0.08), transparent 45%),
+    radial-gradient(circle at 80% 30%, rgba(27, 165, 160, 0.12), transparent 55%),
+    var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), "Lato", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: -10vh;
+  background: radial-gradient(circle at 50% 50%, rgba(29, 111, 163, 0.12), rgba(27, 165, 160, 0));
+  animation: drift 18s ease-in-out infinite;
+  z-index: -2;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: -20vh;
+  background: radial-gradient(circle at 30% 70%, rgba(241, 194, 125, 0.08), rgba(29, 111, 163, 0));
+  animation: drift-alt 22s ease-in-out infinite;
+  z-index: -3;
+}
+
+.page-shell {
+  min-height: 100vh;
+  position: relative;
+}
+
+.page-transition {
+  animation: pageFadeIn 0.7s ease-out both;
+}
+
+.section-appear {
+  animation: sectionRise 0.8s ease-out both;
+}
+
+.section-appear-delay-1 {
+  animation-delay: 0.1s;
+}
+
+.section-appear-delay-2 {
+  animation-delay: 0.2s;
+}
+
+.section-appear-delay-3 {
+  animation-delay: 0.3s;
+}
+
+.floating-badge {
+  animation: floatPulse 4s ease-in-out infinite;
+}
+
+@keyframes drift {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-3%, 3%, 0) scale(1.05);
+  }
+}
+
+@keyframes drift-alt {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1.05);
+  }
+  50% {
+    transform: translate3d(4%, -4%, 0) scale(1);
+  }
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes sectionRise {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.98);
+  }
+  60% {
+    opacity: 1;
+    transform: translate3d(0, -2px, 0) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes floatPulse {
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -6px, 0);
+  }
 }
