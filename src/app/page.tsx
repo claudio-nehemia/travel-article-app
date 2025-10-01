@@ -355,7 +355,7 @@ export default function LandingPage() {
       <main className="flex flex-col gap-20">
         <section className="section-appear px-4 pt-16 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl">
-            <div className="relative h-[440px] overflow-hidden rounded-[32px] shadow-lg shadow-slate-900/10 pb-8">
+            <div className="relative min-h-[520px] sm:min-h-[540px] lg:min-h-[580px] overflow-hidden rounded-[32px] shadow-lg shadow-slate-900/10">
               <Image
                 src={heroImageUrl}
                 alt="Scenic coastal destination"
@@ -364,7 +364,7 @@ export default function LandingPage() {
                 priority
               />
               <div className="absolute inset-0 bg-gradient-to-r from-slate-900/80 via-slate-900/50 to-transparent" />
-              <div className="relative flex h-full flex-col justify-between p-8 text-white sm:p-12 lg:p-16">
+              <div className="relative flex h-full flex-col justify-between p-6 pb-8 text-white sm:p-8 sm:pb-10 lg:p-12 lg:pb-12">
                 <div className="max-w-xl space-y-5">
                   <span className="floating-badge inline-flex w-max items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em]">
                     Discover
