@@ -21,6 +21,8 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useArticles } from "@/hooks/useArticles";
 import { useToast } from "@/hooks/useToast";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useCategories } from "@/hooks/useCategories";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -36,6 +38,12 @@ export default function ArticlesPage() {
   const { showToast, toastMessage, toastType, hideToast } = useToast();
   
   const [isNavigating, setIsNavigating] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
+  const [titleInput, setTitleInput] = useState("");
+  
+  // Debounce search inputs to reduce API calls
+  const debouncedSearch = useDebounce(searchInput, 500);
+  const debouncedTitle = useDebounce(titleInput, 500);
 
   const {
     articleState,
@@ -60,14 +68,19 @@ export default function ArticlesPage() {
       showToast(error, "error");
     }
   }, [error, showToast]);
-
-  const handleSearch = (searchTerm: string) => {
-    setFilters(prev => ({ ...prev, search: searchTerm, page: 1 }));
-  };
-
-  const handleTitleExactChange = (value: string) => {
-    setFilters(prev => ({ ...prev, titleExact: value, page: 1 }));
-  };
+  
+  // Update filters when debounced values change
+  useEffect(() => {
+    if (filters.search !== debouncedSearch) {
+      setFilters(prev => ({ ...prev, search: debouncedSearch, page: 1 }));
+    }
+  }, [debouncedSearch, filters.search, setFilters]);
+  
+  useEffect(() => {
+    if (filters.titleExact !== debouncedTitle) {
+      setFilters(prev => ({ ...prev, titleExact: debouncedTitle, page: 1 }));
+    }
+  }, [debouncedTitle, filters.titleExact, setFilters]);
 
   const handleCategoryFilterChange = (value: string) => {
     setFilters(prev => ({ ...prev, categoryName: value, page: 1 }));
@@ -76,28 +89,18 @@ export default function ArticlesPage() {
   const handleSortChange = (sortValue: string) => {
     setFilters(prev => ({ ...prev, sort: sortValue, page: 1 }));
   };
-  const [categoryFilters, setCategoryFilters] = useState<Category[]>([]);
-  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+  
+  // Use cached categories hook instead of manual fetching
+  const { categories: categoryFilters, isLoading: isLoadingCategories, error: categoryError } = useCategories();
+  
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
+  
+  // Show category load errors
   useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        setIsLoadingCategories(true);
-        const response = await apiService.getCategories();
-        setCategoryFilters(response.data || []);
-      } catch (error) {
-        console.error("Failed to load categories", error);
-        showToast("Failed to load categories", "error");
-      } finally {
-        setIsLoadingCategories(false);
-      }
-    };
-
-    if (!authLoading && isAuthenticated) {
-      loadCategories();
+    if (categoryError) {
+      showToast(categoryError, "error");
     }
-  }, [authLoading, isAuthenticated, showToast]);
+  }, [categoryError, showToast]);
 
 
   const handleDeleteArticle = async (id: string) => {
@@ -181,8 +184,8 @@ export default function ArticlesPage() {
                 <input
                   type="text"
                   placeholder="Search destinations..."
-                  value={filters.search}
-                  onChange={(e) => handleSearch(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   className="w-full pl-12 pr-4 py-3.5 rounded-2xl border-2 border-slate-200/60 bg-white/90 backdrop-blur text-slate-900 placeholder:text-slate-400 focus:border-[var(--accent-primary)] focus:outline-none focus:ring-4 focus:ring-[var(--accent-primary)]/10 transition-all duration-200"
                 />
               </div>
@@ -195,8 +198,8 @@ export default function ArticlesPage() {
                 <input
                   type="text"
                   placeholder="Exact title search..."
-                  value={filters.titleExact}
-                  onChange={(e) => handleTitleExactChange(e.target.value)}
+                  value={titleInput}
+                  onChange={(e) => setTitleInput(e.target.value)}
                   className="w-full pl-12 pr-4 py-3.5 rounded-2xl border-2 border-slate-200/60 bg-white/90 backdrop-blur text-slate-900 placeholder:text-slate-400 focus:border-[var(--accent-primary)] focus:outline-none focus:ring-4 focus:ring-[var(--accent-primary)]/10 transition-all duration-200"
                 />
               </div>

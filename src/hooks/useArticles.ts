@@ -30,10 +30,10 @@ export const useArticles = (isAuthenticated: boolean) => {
   const setFilters = useCallback(
     (updater: FiltersUpdater) => {
       const nextFilters =
-        typeof updater === "function" ? updater(filters) : updater;
+        typeof updater === "function" ? updater(filtersRef.current) : updater;
       dispatch(articlesActions.setFilters(nextFilters));
     },
-    [dispatch, filters]
+    [dispatch]
   );
 
   const { search, sort, titleExact, categoryName, page } = filters;

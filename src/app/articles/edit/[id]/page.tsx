@@ -8,6 +8,7 @@ import { Edit, Loader2 } from "lucide-react";
 import { validateTitle, validateDescription } from "@/lib/validation/validators";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/useToast";
+import { useCategories } from "@/hooks/useCategories";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -47,8 +48,10 @@ export default function EditArticlePage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingArticle, setIsLoadingArticle] = useState(true);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+  
+  // Use cached categories hook
+  const { categories, isLoading: isLoadingCategories, error: categoryError } = useCategories();
+  
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -60,38 +63,13 @@ export default function EditArticlePage() {
       router.push("/login");
     }
   }, [authLoading, isAuthenticated, router]);
-
+  
+  // Show category load errors
   useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        setIsLoadingCategories(true);
-        const response = await apiService.getCategories();
-        const normalizedCategories = (response?.data ?? [])
-          .map((item: CategoryApiEntity) => {
-            const attributes = item?.attributes ?? {};
-            return {
-              id: item?.id ?? attributes?.id ?? 0,
-              name: attributes?.name ?? item?.name ?? "",
-            } satisfies Category;
-          })
-          .filter((category: Category): category is Category => Boolean(category.name));
-
-        setCategories(normalizedCategories);
-      } catch (error) {
-        console.error("Failed to load categories", error);
-        const message = error instanceof Error 
-          ? error.message 
-          : "Gagal memuat kategori. Silakan refresh halaman.";
-        showToast(message);
-      } finally {
-        setIsLoadingCategories(false);
-      }
-    };
-
-    if (!authLoading && isAuthenticated) {
-      loadCategories();
+    if (categoryError) {
+      showToast(categoryError, "error");
     }
-  }, [authLoading, isAuthenticated, showToast]);
+  }, [categoryError, showToast]);
 
   // Fetch article details
   useEffect(() => {
